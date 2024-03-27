@@ -72,6 +72,12 @@ function isElement(obj){
       (typeof obj.ownerDocument ==="object")/* && obj.tagName != "BODY"*/;
 }
 
+function replaceDriveLetter(inputUrl){
+    debugger;
+    const regex = /C:\\demo\\Vvveb(\\public\\themes\\[^\/]+)/;
+    return inputUrl.replace(regex, '');
+}
+
 if (Vvveb === undefined) var Vvveb = {};
 
 Vvveb.defaultComponent = "_base";
@@ -2064,6 +2070,7 @@ Vvveb.Builder = {
 		if (!data["file"]) {
 			data["file"]  = Vvveb.FileManager.getCurrentFileName();
 		}
+		data.file = replaceDriveLetter(data.file);
 
 		data["elements"] = Vvveb.ChangeManager.getChangedElements();
                 
@@ -3147,6 +3154,8 @@ Vvveb.FileManager = {
 	
 	deletePage: function(element, e) {
 		let page = element[0].dataset;
+		page.file = replaceDriveLetter(page.file);
+		page.url = replaceDriveLetter(page.url);
 		if (confirm(`Are you sure you want to delete "${page.file}"template?`)) {
 
 			//allow event to change page or cancel by setting page to false
@@ -3182,6 +3191,8 @@ Vvveb.FileManager = {
 	
 	renamePage: function(element, e, duplicate = false) {
 		let page = element[0].dataset;
+		page.file = replaceDriveLetter(page.file);
+		page.url = replaceDriveLetter(page.url);
 		let newfile = prompt(`Enter new file name for "${page.file}"`, page.file);
 		let _self = this;
 		if (newfile) {
@@ -3332,7 +3343,11 @@ Vvveb.FileManager = {
 		$("> input[type=checkbox]", $(page).parents("[data-folder]")).prop("checked", true);
 		
 		this.currentPage = name;
+		url = replaceDriveLetter(url);
 		$(".btn-preview-url").attr("href", url);
+
+		//url = this.fixUrl(url);
+		this.pages[name].url = url;
 
 		//allow event to change page or url or cancel by setting url to false
 		let result;
@@ -3354,6 +3369,21 @@ Vvveb.FileManager = {
 	scrollBottom: function() {
 		var scroll = this.tree.parent();	
 		scroll.scrollTop(scroll.prop("scrollHeight"));	
+	},
+
+	fixUrl: function(inputUrl) {
+		// Preliminary check for Windows-style paths
+		if (inputUrl.match(/[A-Z]:\\/i)) { // Check for drive letter at the start
+			const regex = /(\/public\/themes\/[^\/]+)\/C:\\demo\\Vvveb(\\public\\themes\\[^\/]+)/;
+			const replacement = "$1/$2"
+			let intermediateResult = inputUrl.replace(regex, replacement)
+			const finalRegex = /\/public\/themes\/[^\\(\s*).*]+\//;
+			const finalReplacement = "/"
+			return intermediateResult.replace(finalRegex, finalReplacement).replace(/\\/g, '/').replace(/\/\//g, '/');
+		} else {
+			// If it doesn't seem like a Windows path, return the input as-is
+			return inputUrl;
+		}
 	},
 }
 
